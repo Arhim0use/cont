@@ -49,7 +49,7 @@ public:
   ~iterator() = default;
 
   iterator& operator++(){
-    nextNode();
+    NextNode();
     return *this;
   }
   iterator operator++(int);
@@ -71,29 +71,55 @@ private:
     // Red - 0 Black - 1
     bool RedBlack_;
 
-    explicit TreeNode_(value_type data = data(), TreeNode_ parent = nullptr, TreeNode_ left = nullptr, TreeNode_ right = nullptr) 
+    explicit TreeNode_(value_type data = data(), TreeNode_ *parent = nullptr, TreeNode_ *left = nullptr, TreeNode_ *right = nullptr, bool RedN) 
               : data_(data), parent_(parent), left_(left), right_(right), RedBlack_(RedN) {}
 
-    explicit TreeNode_(const TreeNode_& other) : data_(other.data_), parent_(other.parent_), 
+    explicit TreeNode_(const TreeNode_& other) : data_(other.data_), key_(other.key_) parent_(other.parent_), 
               left_(other.left_), right_(other.right_), RedBlack_(other.RedBlack_) {}
 
-    explicit TreeNode_(TreeNode_&& other) : data_(std::move(other.data_)), parent_(std::move(other.parent_)), 
+    explicit TreeNode_(TreeNode_&& other) : data_(std::move(other.data_)), key_(std::move(other.key_)), parent_(std::move(other.parent_)), 
               left_(std::move(other.left_)), right_(std::move(other.right_)), RedBlack_(std::move(other.RedBlack_)) {}
-    
-    node_pointer nextNode() const noexcept {
-      TreeNode_ *result = (*this);
-      if (right_){
-        result = right_;
-        for (;result->left_; result = left_);
-      } else if (!right_ && parent_){
-         result = 
-      } else if (parent_ == nullptr && right_ == nullptr){
-        result = nullptr;
+/*
+Если у текущего узла есть правое поддерево,
+следующим узлом будет наименьший узел в 
+этом правом поддереве (т.е. самый левый узел в правом поддереве).
+Если у текущего узла нет правого поддерева, 
+следующим узлом будет ближайший предок, 
+для которого текущий узел находится в левом поддереве.
+*/
+    node_pointer NextNode() const noexcept {
+      node_pointer next = const_cast<node_pointer>(this);
+      if (next->right_){
+        next = next->right_;
+        while(next->left_) next = next->left_;
+      } else if (!next->right_ && next->parent_){
+        while (next->parent_ && next != next->parent_->left_){
+          next = next->parent_;
+        }
+        next = next->parent_;
       }
-      return result;
+      return next;
     }
-    node_pointer prevNode(){
-
+/*
+Если у текущего узла есть левое поддерево, предыдущим 
+узлом будет наибольший узел в этом левом поддереве 
+(т.е. самый правый узел в левом поддереве).
+Если у текущего узла нет левого поддерева, предыдущим 
+узлом будет ближайший предок, для которого текущий 
+узел находится в правом поддереве.
+*/
+    node_pointer PrevNode(){
+      node_pointer prev = const_cast<node_pointer>(this);
+      if (prev->left_){
+        prev = prev->left_;
+        while(prev->right_) prev = prev->right_;
+      } else if (!prev->left_ && prev->parent_){
+        while(prev->parent_ && prev != prev->parent_->right_){
+          prev = prev->parent_;
+        }
+        prev = prev->parent_;
+      }
+      return prev;
     }
   }
 
@@ -104,48 +130,32 @@ private:
 template<typename Key_T, typename Value_T,  bool Const>
 typename s21::iterator<Key_T, Value_T, Const>&
 s21::iterator<Key_T, Value_T, Const>::operator++(){
-  nextNode();
+  NextNode();
   return *this;
 }
 
-      // iterator operator++(int);
-      // iterator& operator--();
-      // iterator operator--(int);
+template<typename Key_T, typename Value_T,  bool Const>
+typename s21::iterator<Key_T, Value_T, Const>
+s21::iterator<Key_T, Value_T, Const>::operator++(int){
+  iterator temp = (*this);
+  temp.NextNode();
+  return temp;
+}
 
+template<typename Key_T, typename Value_T,  bool Const>
+typename s21::iterator<Key_T, Value_T, Const>&
+s21::iterator<Key_T, Value_T, Const>::operator--(){
+  PrevNode();
+  return *this;
+}
 
-// template <typename T, bool Const>
-// class StackIterator;
-
-// template <typename T>
-// class stack;
-
-// template <typename T, bool Const>
-// class StackIterator {
-//   friend class stack;
-//   struct StackNode_;
-//   //* Эти переопределения using помогают в создании гибкого итератора, 
-//   //* который может быть использован в стандартных контейнерах 
-//   //* STL и других контекстах, ожидая совместимость с интерфейсом STL.
-//   using iterator = StackIterator;
-//   //* Если Const равно true, то это будет указатель на константный узел 
-//   //* (const list_node *), иначе - указатель на изменяемый узел (list_node *).
-//   using node_pointer = std::conditional_t<Const, const StackNode_ *, StackNode_ *>;
-//   using difference_type = std::ptrdiff_t;
-//   using value_type = T;
-//   using pointer = std::conditional_t<Const, const T *, T *>;
-//   using reference = std::conditional_t<Const, const T &, T &>;
-//   using iterator_category = std::forward_iterator_tag;
-
-//   public:
-//     iterator() = delete;
-//     explicit iterator(node_pointer node) : node_(node){}
-//     ~iterator() = default;
-    
-//     reference operator*() noexcept const { return node_->data_; }
-
-
-
-
+template<typename Key_T, typename Value_T,  bool Const>
+typename s21::iterator<Key_T, Value_T, Const>&
+s21::iterator<Key_T, Value_T, Const>::operator--(){
+  iterator temp = (*this);
+  temp.PrevNode();
+  return temp;
+}
 
 
 
