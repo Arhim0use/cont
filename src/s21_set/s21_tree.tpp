@@ -4,6 +4,7 @@ namespace s21{
 template<typename Key_T, typename Value_T>
 class RB_tree
 {
+  struct TreeNode_;
     //* Эти переопределения using помогают в создании гибкого итератора, 
     //* который может быть использован в стандартных контейнерах 
     //* STL и других контекстах, ожидая совместимость с интерфейсом STL.
@@ -25,8 +26,8 @@ class RB_tree
 
 
   private:
-    template<typename Key_T, typename Value_T,  bool Const>
-    class iterator;
+    template<Key_T, Value_T>
+    TreeNode_* node_;
 }; // class RB_tree
 
 template<typename Key_T, typename Value_T,  bool Const>
@@ -48,16 +49,13 @@ public:
   explicit iterator(node_pointer node) : node_(node) {}
   ~iterator() = default;
 
-  iterator& operator++(){
-    NextNode();
-    return *this;
-  }
+  iterator& operator++();
   iterator operator++(int);
   iterator& operator--();
   iterator operator--(int);
-  reference operator*() { return data_; }
+  reference operator*() { return node_->data_; }
   bool operator==(const iterator& other) { return node_ == other.node_; }
-  bool operator!=(const iterator& other) { return node_ == other.node_; }
+  bool operator!=(const iterator& other) { return node_ != other.node_; }
 
 private:
   node_pointer node_;
@@ -130,7 +128,7 @@ private:
 template<typename Key_T, typename Value_T,  bool Const>
 typename s21::iterator<Key_T, Value_T, Const>&
 s21::iterator<Key_T, Value_T, Const>::operator++(){
-  NextNode();
+  node_ = node_->NextNode();
   return *this;
 }
 
@@ -138,14 +136,14 @@ template<typename Key_T, typename Value_T,  bool Const>
 typename s21::iterator<Key_T, Value_T, Const>
 s21::iterator<Key_T, Value_T, Const>::operator++(int){
   iterator temp = (*this);
-  temp.NextNode();
+  ++(*this);
   return temp;
 }
 
 template<typename Key_T, typename Value_T,  bool Const>
 typename s21::iterator<Key_T, Value_T, Const>&
 s21::iterator<Key_T, Value_T, Const>::operator--(){
-  PrevNode();
+  node_ = node_->PrevNode();
   return *this;
 }
 
@@ -153,7 +151,7 @@ template<typename Key_T, typename Value_T,  bool Const>
 typename s21::iterator<Key_T, Value_T, Const>&
 s21::iterator<Key_T, Value_T, Const>::operator--(){
   iterator temp = (*this);
-  temp.PrevNode();
+  --(*this);
   return temp;
 }
 
