@@ -1,22 +1,23 @@
 
 
 namespace s21{
-template<typename Key_T, typename Value_T>
+template<typename Key, typename T>
 class RB_tree
 {
   struct TreeNode_;
     //* Эти переопределения using помогают в создании гибкого итератора, 
     //* который может быть использован в стандартных контейнерах 
     //* STL и других контекстах, ожидая совместимость с интерфейсом STL.
-    using value_type = Value_T;
-    using key_type = Key_T;
+    using mapped_type = T;
+    using key_type = Key;
+    using value_type = std::pair<const key_type,mapped_type>;
     using reference = value_type &;
     using difference_type = std::ptrdiff_t;
     using iterator_category = std::forward_iterator_tag;
     using const_reference = const value_type &;
     using size_type = std::size_t;
-    using iterator = iterator<Key_T, Value_T, false>;
-    using const_iterator = iterator<Key_T, Value_T, true>;
+    using iterator = iterator<Key, T, false>;
+    using const_iterator = iterator<Key, T, true>;
   public:
     RB_tree(/* args */);
     ~RB_tree();
@@ -26,24 +27,18 @@ class RB_tree
 
 
   private:
-    template<Key_T, Value_T>
+    template<Key, T>
     TreeNode_* node_;
 }; // class RB_tree
 
-template<typename Key_T, typename Value_T,  bool Const>
+template<bool Const>
 class iterator{
-  enum NodeColor { RedN, BlackN };
   struct TreeNode_;
 
-  using value_type = Value_T;
-  using key_type = Key_T;
   //* Если Const равно true, то это будет указатель на константный узел 
   //* (const list_node *), иначе - указатель на изменяемый узел (list_node *).
   // using node_ = std::conditional_t<Const, const TreeNode_ , TreeNode_>;
   using node_pointer = std::conditional_t<Const, const TreeNode_ *, TreeNode_ *>;
-  using pointer = std::conditional_t<Const, const Value_T *, Value_T *>;
-  using reference = std::conditional_t<Const, const Value_T &, Value_T &>;
-
 public:
   iterator() = delete;
   explicit iterator(node_pointer node) : node_(node) {}
@@ -59,23 +54,27 @@ public:
 
 private:
   node_pointer node_;
-  struct TreeNode_{
-    value_type data_ = data();
-    Key_T key_ = key();
+}; // class iterator
 
-    TreeNode_ *parent_;
-    TreeNode_ *right_;
-    TreeNode_ *left_;
+template<typename Key, typename T>
+struct TreeNode_{
+  enum NodeColor { RedN, BlackN };
+  using mapped_type = T;
+  using key_type = Key;
+  using value_type = std::pair<const key_type, mapped_type>;
+  using node_pointer = TreeNode_ *;
+    value_type data_;
+    TreeNode_ *parent_, *right_, *left_;
     // Red - 0 Black - 1
     bool RedBlack_;
 
-    explicit TreeNode_(value_type data = data(), TreeNode_ *parent = nullptr, TreeNode_ *left = nullptr, TreeNode_ *right = nullptr, bool RedN) 
-              : data_(data), parent_(parent), left_(left), right_(right), RedBlack_(RedN) {}
+    explicit TreeNode_() 
+              : data_(value_type()), parent_(nullptr), left_(nullptr), right_(nullptr), RedBlack_(RedN) {}
 
-    explicit TreeNode_(const TreeNode_& other) : data_(other.data_), key_(other.key_) parent_(other.parent_), 
+    explicit TreeNode_(const TreeNode_& other) : data_(other.data_), parent_(other.parent_), 
               left_(other.left_), right_(other.right_), RedBlack_(other.RedBlack_) {}
 
-    explicit TreeNode_(TreeNode_&& other) : data_(std::move(other.data_)), key_(std::move(other.key_)), parent_(std::move(other.parent_)), 
+    explicit TreeNode_(TreeNode_&& other) : data_(std::move(other.data_)), parent_(std::move(other.parent_)), 
               left_(std::move(other.left_)), right_(std::move(other.right_)), RedBlack_(std::move(other.RedBlack_)) {}
 /*
 Если у текущего узла есть правое поддерево,
@@ -119,40 +118,38 @@ private:
       }
       return prev;
     }
-  }
-
-}; // class iterator
+  };
 } // namespace s21
 
 
-template<typename Key_T, typename Value_T,  bool Const>
-typename s21::iterator<Key_T, Value_T, Const>&
-s21::iterator<Key_T, Value_T, Const>::operator++(){
+template<bool Const>
+typename s21::iterator<Const>&
+s21::iterator<Const>::operator++(){
   node_ = node_->NextNode();
   return *this;
 }
 
-template<typename Key_T, typename Value_T,  bool Const>
-typename s21::iterator<Key_T, Value_T, Const>
-s21::iterator<Key_T, Value_T, Const>::operator++(int){
+template<bool Const>
+typename s21::iterator<Const>
+s21::iterator<Const>::operator++(int){
   iterator temp = (*this);
   ++(*this);
   return temp;
 }
 
-template<typename Key_T, typename Value_T,  bool Const>
-typename s21::iterator<Key_T, Value_T, Const>&
-s21::iterator<Key_T, Value_T, Const>::operator--(){
+template<bool Const>
+typename s21::iterator<Const>&
+s21::iterator<Const>::operator--(){
   node_ = node_->PrevNode();
   return *this;
 }
 
-template<typename Key_T, typename Value_T,  bool Const>
-typename s21::iterator<Key_T, Value_T, Const>&
-s21::iterator<Key_T, Value_T, Const>::operator--(){
+template<bool Const>
+typename s21::iterator<Const>&
+s21::iterator<Const>::operator--(){
   iterator temp = (*this);
   --(*this);
-  return temp;
+  return temp; 
 }
 
 
@@ -205,7 +202,6 @@ s21::iterator<Key_T, Value_T, Const>::operator--(){
 // *Set Modifiers*
 
 // В этой таблице перечислены публичные методы для изменения контейнера:
-
 
 // | Modifiers              | Definition                                                                             |
 // |------------------------|----------------------------------------------------------------------------------------|
