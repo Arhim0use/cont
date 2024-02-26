@@ -9,7 +9,7 @@
 #include <initializer_list>
 #include <iostream>
 
-#include "RB_tree.h"
+#include "../RB_tree/RB_tree.h"
 
 namespace s21 {
 template <class Key, class Value, class Compare = std::less<Key>,
@@ -80,11 +80,11 @@ class map : RB_tree<Key, Value> {
   // }
 
   // // Iterators
-  // iterator begin() { /* Begin iterator */
-  // }
+  iterator begin() { /* Begin iterator */
+    return tree_->begin();
+  }
 
-  // iterator end() { /* End iterator */
-  // }
+  iterator end() { return tree_->end(); }
 
   // reverse_iterator rbegin() { return reverse_iterator(end()); }
 
@@ -131,6 +131,13 @@ class map : RB_tree<Key, Value> {
     tree_->InsertUniq(std::make_pair(key, obj));
 
    }
+
+   void fullnodeinfo(iterator it){
+    tree_->FullNodeInfo(it);
+   }
+   iterator nnullIterartor(){
+    return tree_->NNullIterartor();
+   }
   //  std::pair<iterator, bool> insert_or_assign(const Key& key, const Value&
   //  obj); void erase(iterator pos);
   // void swap(map &other);
@@ -138,7 +145,8 @@ class map : RB_tree<Key, Value> {
 
   // Lookup
   // size_type count(const key_type &x) const {}
-
+  bool blHight(){ return tree_->checkBlackHeight(); }
+  bool redAlert(){ return tree_->hasConsecutiveReds(); }
   iterator find(const key_type &x) { return tree_->find(x);}
 
   // const_iterator find(const key_type &x) const {}
@@ -159,6 +167,8 @@ class map : RB_tree<Key, Value> {
   }
   void PrintMapRecursive(){
     tree_->PrintTreeRecursive(tree_->RootIterartor(), 0);
+    auto it = tree_->NNullIterartor();
+    std::cout << (*it).first << "\n";
   }
 
  private:
