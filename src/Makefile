@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -Wall -Wextra -Werror -std=c++17 -pedantic -g 
+CFLAGS = -Wall -Wextra -Werror -std=c++17 -pedantic 
 LDFLAGS = -lgtest -pthread
 GCFLAGS = -fprofile-arcs -ftest-coverage
 VG_FLAGS =	--vgdb=no --leak-check=full --show-leak-kinds=all --track-origins=yes --verbose
@@ -8,19 +8,28 @@ CHECK =	$(shell pkg-config --cflags --libs check)
 
 SRC	= $(wildcard ./s21_*.h) 
 OBJ	= $(patsubst ./s21_%.h, ./s21_%.o, ${SRC})
-TEST = tests
+TEST = test
 LIB = s21_container.a
 FILE_TEST =	$(wildcard ./tests/s21_*.cc)
 
 all: clean test
 
-test:
-	g++ -Wall -Wextra -Werror -std=c++17 -pedantic -lgtest -pthread tests/s21_stack.cc s21_matrix/s21_matrix_oop.cc && ./a.out
+test:clean
+# $(CC) $(CFLAGS) $(LDFLAGS) --coverage ./tests/*.cc ./s21_matrix/*.cc -o $(TEST) $(GCFLAGS)
+# $(CC) $(CFLAGS) $(LDFLAGS) tests/s21_stack.cc s21_matrix/s21_matrix_oop.cc -o $(TEST) $(GCFLAGS)
+	$(CC) $(CFLAGS) $(LDFLAGS) tests/s21_set.cc -o $(TEST) $(GCFLAGS)
+	./$(TEST)
 
 clean:
-	@rm -f  ./*.o ./*.a ./*.gcda ./*.gcno ./*.info ./*.out ./$(TEST)/$(TEST)
+	@rm -f  ./*.o ./*.a ./*.gcda ./*.gcno ./*.info ./*.out $(TEST)
 	@rm -rf coverage $(TEST).dSYM $(TEST)s.dSYM 
 	@rm -rf googletest
+
+gcov_report: test
+	@lcov -t "containers_test" -o containers_test.info -c -d . --no-external --ignore-errors mismatch
+	genhtml -o report containers_test.info
+	open report/index.html
+
 
 # $(LIB):
 # 	@echo "+-------------------+"

@@ -4,6 +4,7 @@
 namespace s21{
 
 struct TreeNode_;  
+template <bool Const>
 class Iterator;
 
 using node_pointer = TreeNode_ *;
@@ -11,8 +12,78 @@ using iterator = Iterator<false>;
 using const_iterator = Iterator<true>;
 
 template <typename Key, typename Value>
+RB_tree<Key, Value>::RB_tree() : root_(nullptr) { Init_n_nul(); }
+template <typename Key, typename Value>
+RB_tree<Key, Value>::RB_tree(const RB_tree& other) : root_(nullptr) {
+  Init_n_nul();
+  CopyTree(other);
+}
+template <typename Key, typename Value>
+RB_tree<Key, Value>::RB_tree(RB_tree&& other) : root_(nullptr) {
+  this->DeleteTreeRecursive(root_);
+  delete n_null_;
+  root_ = other.root_;
+  n_null_ = other.n_null_;
+  other.root_ = nullptr;
+  other.n_null_ = nullptr;
+}
+template <typename Key, typename Value>
+RB_tree<Key, Value>::~RB_tree() {
+  DeleteTreeRecursive(root_);
+  delete n_null_;
+}
+
+template <typename Key, typename Value>
+RB_tree<Key, Value>& RB_tree<Key, Value>::operator=(RB_tree&& other){
+  if (this != &other){
+    DeleteTreeRecursive(root_);
+    delete n_null_;
+    root_ = other.root_; 
+    n_null_ = other.n_null_;
+    other.root_ = nullptr;
+    other.n_null_ = nullptr;
+  } 
+  return *this;
+}
+
+template <typename Key, typename Value>
+RB_tree<Key, Value> RB_tree<Key, Value>::operator=(const RB_tree& other){
+  if (this != &other){
+    CleanTree();
+    CopyTree(other);
+
+  }
+    return *this;
+}
+
+template <typename Key, typename Value>
 typename RB_tree<Key, Value>::node_pointer
-RB_tree<Key, Value>::GoLeft(){
+RB_tree<Key, Value>::CopyNodeRecursive(const node_pointer &other_node, const node_pointer &other_n_null)  {
+  if (other_node == other_n_null) return n_null_;
+
+  node_pointer new_node = InitNode();
+  new_node->data_ = other_node->data_;
+  new_node->color_ = other_node->color_;
+  new_node->left_ = CopyNodeRecursive(other_node->left_, other_n_null);
+  if (new_node->left_ != n_null_) new_node->left_->parent_ = new_node;
+  new_node->right_ = CopyNodeRecursive(other_node->right_, other_n_null);
+  if (new_node->right_ != n_null_) new_node->right_->parent_ = new_node;
+
+  return new_node;
+}
+
+template <typename Key, typename Value>
+void RB_tree<Key, Value>::CopyTree(const RB_tree& other) {
+  DeleteTreeRecursive(root_); 
+  // if(!root_) root_ = new TreeNode_();
+  root_ = CopyNodeRecursive(other.root_, other.n_null_);
+  if (root_ != n_null_) root_->parent_ = n_null_;
+  n_null_->parent_ = GoRight();
+}
+
+template <typename Key, typename Value>
+typename RB_tree<Key, Value>::node_pointer
+RB_tree<Key, Value>::GoLeft() noexcept {
   node_pointer temp = const_cast<node_pointer>(root_);
   while (temp->left_  && temp->left_ != n_null_){
     temp = temp->left_;
@@ -22,7 +93,7 @@ RB_tree<Key, Value>::GoLeft(){
 
 template <typename Key, typename Value>
 typename RB_tree<Key, Value>::node_pointer
-RB_tree<Key, Value>::GoRight(){
+RB_tree<Key, Value>::GoRight() noexcept {
   node_pointer temp = const_cast<node_pointer>(root_);
   while (temp->right_ && temp->right_ != n_null_){
     temp = temp->right_;
@@ -57,7 +128,7 @@ void RB_tree<Key, Value>::Init_n_nul(){
 }
 
 template <typename Key, typename Value>
-void RB_tree<Key, Value>::DeleteTreeRecursive(node_pointer node) {
+void RB_tree<Key, Value>::DeleteTreeRecursive(node_pointer node){
   if (node && node != n_null_) {
     DeleteTreeRecursive(node->left_);
     DeleteTreeRecursive(node->right_);
@@ -70,18 +141,30 @@ void RB_tree<Key, Value>::DeleteTreeRecursive(node_pointer node) {
   }
 }
 
+// template <typename Key, typename Value>
+// void RB_tree<Key, Value>::NodeTransfer(node_pointer node, node_pointer prev) noexcept {
+//   prev->parent_ = node->parent_;
+
+//   if(prev != node->left_) prev->left_ = node->left_;
+//   if(prev != node->right_) prev->right_ = node->right_;
+
+//   if(prev->left_ != n_null_) prev->left_->parent_ = prev.parent;
+//   if(prev->right_ != n_null_) prev->right_->parent_ = prev;
+//   if(prev->parent_ != n_null_) LeftOrRight(node, prev);
+// }
+
 template <typename Key, typename Value>
-void RB_tree<Key, Value>::NodeTransfer(node_pointer replaceable, node_pointer replacing){
+void RB_tree<Key, Value>::NodeTransfer(node_pointer replaceable, node_pointer replacing) noexcept {
   replacing->parent_ = replaceable->parent_;
-  if(replacing != replaceable->left_)replacing->left_ = replaceable->left_;
-  if(replacing != replaceable->right_)replacing->right_ = replaceable->right_;
-  if(replacing->left_ != n_null_) replacing->left_->parent_ = replacing;
+  if(replacing != replaceable->left_) replacing->left_ = replaceable->left_;
+  if(replacing != replaceable->right_) replacing->right_ = replaceable->right_;
+  if(replacing->left_ != n_null_) replacing->left_->parent_ = replacing->parent_;
   if(replacing->right_ != n_null_) replacing->right_->parent_ = replacing;
   if(replacing->parent_ != n_null_) LeftOrRight(replaceable, replacing);
 }
 
 template <typename Key, typename Value>
-void RB_tree<Key, Value>::LeftOrRight(node_pointer checked, node_pointer insert){
+void RB_tree<Key, Value>::LeftOrRight(node_pointer checked, node_pointer insert) noexcept {
   node_pointer parent = checked->parent_;
   if(checked == parent->left_){
     parent->left_ = insert;
@@ -95,11 +178,9 @@ void RB_tree<Key, Value>::LeftOrRight(node_pointer checked, node_pointer insert)
   }
 }
 
-
-
 template<typename Key, typename Value>
 std::pair<typename RB_tree<Key, Value>::node_pointer, bool> 
-RB_tree<Key, Value>::FindEqData(const Key& first) const{ 
+RB_tree<Key, Value>::FindEqData(const Key& first) const noexcept { 
   node_pointer eq_node = root_;
   std::pair<node_pointer, bool> exit = {eq_node, true};
   if(!eq_node){
@@ -124,8 +205,8 @@ RB_tree<Key, Value>::FindEqData(const Key& first) const{
 
 template <typename Key, typename Value>
 typename RB_tree<Key, Value>::node_pointer
-RB_tree<Key, Value>::DeleteNode(const value_type& key){
-  std::pair<node_pointer, bool> pair = FindEqData(key.first);
+RB_tree<Key, Value>::DeleteNode(const key_type& key){
+  std::pair<node_pointer, bool> pair = FindEqData(key);
   node_pointer node = pair.first;
   node_pointer prev = node->PrevNode();
   if (pair.second == true){
@@ -163,21 +244,29 @@ template <typename Key, typename Value>
 typename RB_tree<Key, Value>::node_pointer
 RB_tree<Key, Value>::InsertAll(const value_type& key, node_pointer key_position){
   node_pointer new_node = InitNode(key);
-  if (!root_) {
+  if (!root_ || root_ == n_null_) {
     root_ = new_node;
     root_->color_ = BlackN;
   } else {
     node_pointer temp = key_position;
     if(temp->data_.first > key.first){
+      // if (temp->left_ != n_null_){ // по идее нужна только нижняя подобная конструкция 
+      //   temp->left_->parent_ = new_node;
+      //   new_node->left_ = temp->left_;
+      // }
       temp->left_ = new_node;
       new_node->parent_ = temp;
     } else {
+      // if (temp->right_ != n_null_){ // <= key insert if duplicates and node does't a leaf
+      //   temp->right_->parent_ = new_node;
+      //   new_node->right_ = temp->right_;
+      // }
       temp->right_ = new_node;
       new_node->parent_ = temp;
     }
     BalanceAfterIncert(new_node);
+    root_->color_ = BlackN;
   }
-  n_null_->data_.first++;
   n_null_->parent_ = GoRight();
   return new_node;
 }
@@ -195,21 +284,30 @@ template <typename Key, typename Value>
 void RB_tree<Key, Value>::Insert(const value_type& key){ InsertAll(key, FindEqData(key.first).first); }
 
 template<class Key, class Value> 
-inline RB_tree<Key, Value>::iterator RB_tree<Key, Value>::find(const Key& key){ 
+inline typename RB_tree<Key, Value>::iterator 
+RB_tree<Key, Value>::find(const Key& key) noexcept { 
   std::pair<node_pointer, bool> pair = FindEqData(key); 
   return (pair.second ? iterator (pair.first) : iterator (n_null_));  
 }
+
 template<class Key, class Value> 
-inline RB_tree<Key, Value>::iterator RB_tree<Key, Value>::end(){ return iterator(n_null_); }
+inline typename RB_tree<Key, Value>::iterator 
+RB_tree<Key, Value>::end() noexcept { return iterator(n_null_); }
+
 template<class Key, class Value> 
-inline RB_tree<Key, Value>::iterator RB_tree<Key, Value>::begin(){ return iterator(GoLeft()); }
+inline typename RB_tree<Key, Value>::iterator 
+RB_tree<Key, Value>::begin() noexcept { return iterator(GoLeft()); }
+
 template<class Key, class Value> 
-inline RB_tree<Key, Value>::const_iterator RB_tree<Key, Value>::cend(){ return const_iterator(n_null_); }
+inline typename RB_tree<Key, Value>::const_iterator 
+RB_tree<Key, Value>::cend() noexcept { return const_iterator(n_null_); }
+
 template<class Key, class Value> 
-inline RB_tree<Key, Value>::const_iterator RB_tree<Key, Value>::cbegin(){ return const_iterator(GoLeft()); }
+inline typename RB_tree<Key, Value>::const_iterator 
+RB_tree<Key, Value>::cbegin() noexcept { return const_iterator(GoLeft()); }
 
 template <typename Key, typename Value>
-void RB_tree<Key, Value>::SmallRotate(node_pointer node, bool L_R){
+void RB_tree<Key, Value>::SmallRotate(node_pointer node, bool L_R) noexcept {
   node_pointer grandparent = GetGrandparent(node);
   node_pointer parent = node->parent_;
   node_pointer n_child = L_R ? node->left_ : node->right_; 
@@ -227,7 +325,7 @@ void RB_tree<Key, Value>::SmallRotate(node_pointer node, bool L_R){
 }
 
 template <typename Key, typename Value>
-void RB_tree<Key, Value>::BigRotate(node_pointer node, bool L_R){
+void RB_tree<Key, Value>::BigRotate(node_pointer node, bool L_R) noexcept {
   node_pointer grandparent = GetGrandparent(node);
   node_pointer parent = node->parent_;
   node_pointer grandgrandparent = grandparent->parent_;
@@ -250,11 +348,11 @@ void RB_tree<Key, Value>::BigRotate(node_pointer node, bool L_R){
     root_ = parent;
   } 
   if(parent != root_) parent->SwitchNodeColor();
-  grandparent->SwitchNodeColor(); 
+  if(grandparent != root_)grandparent->SwitchNodeColor(); 
 }
 
 template <typename Key, typename Value>
-void RB_tree<Key, Value>::BalanceAfterIncert(node_pointer node){
+void RB_tree<Key, Value>::BalanceAfterIncert(node_pointer node) noexcept {
   if(node->parent_->color_ == RedN){
     node_pointer parent = node->parent_;
     if(GetGrandparent(node)->color_ == BlackN){
@@ -275,7 +373,6 @@ void RB_tree<Key, Value>::BalanceAfterIncert(node_pointer node){
         } else if (GetGrandparent(node)->right_ == parent && parent->right_ == node){
           BigRotate(node, 0);
         }
-        root_->color_ = BlackN;
       }  
     }
   }
@@ -283,7 +380,7 @@ void RB_tree<Key, Value>::BalanceAfterIncert(node_pointer node){
 
 template <typename Key, typename Value>
 typename RB_tree<Key, Value>::node_pointer
-RB_tree<Key, Value>::GetUncle(node_pointer node) {
+RB_tree<Key, Value>::GetUncle(node_pointer node) noexcept {
   if (node->parent_ == n_null_ || node->parent_->parent_ == n_null_) {
     return n_null_;  // The node does not have an uncle
   }
@@ -296,7 +393,7 @@ RB_tree<Key, Value>::GetUncle(node_pointer node) {
 
 template <typename Key, typename Value>
 typename RB_tree<Key, Value>::node_pointer
-RB_tree<Key, Value>::GetGrandparent(node_pointer node) {
+RB_tree<Key, Value>::GetGrandparent(node_pointer node) noexcept {
   if (node->parent_ == n_null_) {
     return n_null_; 
   }
@@ -305,7 +402,7 @@ RB_tree<Key, Value>::GetGrandparent(node_pointer node) {
 
 template <typename Key, typename Value>
 typename RB_tree<Key, Value>::node_pointer
-RB_tree<Key, Value>::GetSibling(node_pointer node) {
+RB_tree<Key, Value>::GetSibling(node_pointer node) noexcept {
   if (node == node->parent_->left_) {
     return node->parent->right_;
   } else {
@@ -313,17 +410,6 @@ RB_tree<Key, Value>::GetSibling(node_pointer node) {
   }
 }
 
-}; // namespace s21
+} // namespace s21
 
 
-
-
-// | Member type            | Definition                                                                             |
-// |------------------------|----------------------------------------------------------------------------------------|
-// | `key_type`               | `Key` the first template parameter (Key)                                                     |
-// | `value_type`             | `Key` value type (the value itself is a key)                                                    |
-// | `reference`              | `value_type &` defines the type of the reference to an element                                                             |
-// | `const_reference`        | `const value_type &` defines the type of the constant reference                                         |
-// | `iterator`               | internal class `SetIterator<T>` or `BinaryTree::iterator` as the internal iterator of tree subclass; defines the type for iterating through the container                                                 |
-// | `const_iterator`         | internal class `SetConstIterator<T>` or `BinaryTree::const_iterator` as the internal const iterator of tree subclass; defines the constant type for iterating through the container                                           |
-// | `size_type`              | `size_t` defines the type of the container size (standard type is size_t) |

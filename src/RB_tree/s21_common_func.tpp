@@ -50,51 +50,44 @@ namespace s21{
 //ВЫШЕ_УДАЛИТЬ
 //НИЖЕ___НЕ_УДАЛЯТЬ___НИЖЕ___НЕ_УДАЛЯТЬ___НИЖЕ___НЕ_УДАЛЯТЬ___НИЖЕ___НЕ_УДАЛЯТЬ___НИЖЕ___НЕ_УДАЛЯТЬ___НИЖЕ___НЕ_УДАЛЯТЬ___НИЖЕ___НЕ_УДАЛЯТЬ___НИЖЕ___НЕ_УДАЛЯТЬ___НИЖЕ___НЕ_УДАЛЯТЬ___НИЖЕ___НЕ_УДАЛЯТЬ___НИЖЕ___НЕ_УДАЛЯТЬ___
 template <typename Key, typename Value>
-bool RB_tree<Key, Value>::checkBlackHeight() {
-  if (root_ == n_null_) return true;
-  // node_pointer node = root_;
-  std::stack<std::pair<node_pointer, int>> stack;
-  std::vector<int> blackHeights;
-  // int blackHeight = 0;
-  stack.push({root_, 0});
-
-  while (!stack.empty()) {
-    auto [node, blackHeight] = stack.top();
-    stack.pop();
-
-    if (node->color_ == BlackN) {
-      blackHeight++;
-    }
-
-    if (node->left_ == n_null_ && node->right_ == n_null_) {
-      // Если текущий узел - лист, проверяем, уникальна ли его черная высота
-      if (std::find(blackHeights.begin(), blackHeights.end(), blackHeight) == blackHeights.end()) {
-        blackHeights.push_back(blackHeight);
-      }
-      if (blackHeights.size() > 2 || (blackHeights.size() == 2 && std::abs(blackHeights[0] - blackHeights[1]) > 1)) {
-        return false;
-      }
-    } else {
-      if (node->right_ != n_null_) {
-        stack.push({node->right_, blackHeight});
-      }
-      if (node->left_ != n_null_) {
-        stack.push({node->left_, blackHeight});
-      }
-    }
+bool RB_tree<Key, Value>::CheckBlackHeight() const noexcept {
+  if (root_ == nullptr || root_ == n_null_) {
+      return true;
   }
+  int minBlackHeight = 0;
+  int maxBlackHeight = 0;
+  minBlackHeight = FindMinBlackHeight(root_, minBlackHeight);
+  maxBlackHeight = FindMaxBlackHeight(root_, maxBlackHeight);
 
-  return true;
+  return abs(maxBlackHeight - minBlackHeight) <= 1;
+}
+
+template <typename Key, typename Value>
+int RB_tree<Key, Value>::FindMinBlackHeight(node_pointer node, int currentHeight) const {
+  if (node == n_null_) return currentHeight;
+  if (node->color_) currentHeight++; 
+  int leftHeight = FindMinBlackHeight(node->left_, currentHeight);
+  int rightHeight = FindMinBlackHeight(node->right_, currentHeight);
+  return std::min(leftHeight, rightHeight);
+}
+
+template <typename Key, typename Value>
+int RB_tree<Key, Value>::FindMaxBlackHeight(node_pointer node, int currentHeight) const {
+  if (node == n_null_) return currentHeight;
+  if (node->color_) currentHeight++; 
+  int leftHeight = FindMinBlackHeight(node->left_, currentHeight);
+  int rightHeight = FindMinBlackHeight(node->right_, currentHeight);
+  return std::max(leftHeight, rightHeight);
 }
 
 template <typename Key, typename Value>
 bool RB_tree<Key, Value>::hasConsecutiveReds() const {
   bool alert = false;
-  return checkConsecutiveReds(root_, alert);
+  return CheckRedFamily(root_, alert);
 }
 
 template <typename Key, typename Value>
-bool RB_tree<Key, Value>::checkConsecutiveReds(node_pointer node, bool alert) const {
+bool RB_tree<Key, Value>::CheckRedFamily(node_pointer node, bool alert) const noexcept {
   if(alert) return true; 
   if (node == n_null_) return (alert = false);
 
@@ -104,7 +97,7 @@ bool RB_tree<Key, Value>::checkConsecutiveReds(node_pointer node, bool alert) co
   }
 
   // Рекурсивно проверяем левое и правое поддеревья
-  return checkConsecutiveReds(node->left_, alert) || checkConsecutiveReds(node->right_, alert);
+  return CheckRedFamily(node->left_, alert) || CheckRedFamily(node->right_, alert);
 }
 
 

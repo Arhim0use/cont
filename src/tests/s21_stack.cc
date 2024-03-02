@@ -97,6 +97,18 @@ TEST(S21_Stack, Push_int) {
   EXPECT_EQ(s21_stk.top(), std_stk.top());
 }
 
+TEST(S21_Stack, Insert_many_front) {
+  s21::stack<int> s21_stk;
+  std::stack<int> std_stk;
+  for(int i = 0; i <= 15; i += 5 ){
+    std_stk.push(i);
+  } 
+  s21_stk.insert_many_front(0,5,10,15);
+
+  EXPECT_EQ(s21_stk.size(), std_stk.size());
+  EXPECT_EQ(s21_stk.top(), std_stk.top());
+}
+
 TEST(S21_Stack, Push_float) {
   s21::stack<float> s21_stk;
   std::stack<float> std_stk;

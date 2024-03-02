@@ -2,13 +2,10 @@
 #include "RB_tree.h"
 
 namespace s21 {
-// template<typename Key> // вариант №1
-// struct RB_tree<Key>::TreeNode_{
-template<typename Key, typename Value>// вариант №2
+template<typename Key, typename Value>
 struct RB_tree<Key, Value>::TreeNode_{
   
-  // using value_type = Key; // вариант №1
-  using value_type = std::pair<Key, Value>; // вариант №2
+  using value_type = std::pair<Key, Value>; 
   using node_pointer = TreeNode_ *;
     value_type data_;
     node_pointer parent_;
@@ -25,14 +22,7 @@ struct RB_tree<Key, Value>::TreeNode_{
 
     explicit TreeNode_(TreeNode_&& other) : data_(std::move(other.data_)), parent_(std::move(other.parent_)), 
               left_(std::move(other.left_)), right_(std::move(other.right_)), color_(std::move(other.color_)) {}
-/*
-Если у текущего узла есть правое поддерево,
-следующим узлом будет наименьший узел в 
-этом правом поддереве (т.е. самый левый узел в правом поддереве).
-Если у текущего узла нет правого поддерева, 
-следующим узлом будет ближайший предок, 
-для которого текущий узел находится в левом поддереве.
-*/
+
   node_pointer NextNode() const noexcept {
     node_pointer next = const_cast<node_pointer>(this);
     if (!next->NextIsN_null(2)){
@@ -49,14 +39,7 @@ struct RB_tree<Key, Value>::TreeNode_{
     }
     return next;
   }
-/*
-Если у текущего узла есть левое поддерево, предыдущим 
-узлом будет наибольший узел в этом левом поддереве 
-(т.е. самый правый узел в левом поддереве).
-Если у текущего узла нет левого поддерева, предыдущим 
-узлом будет ближайший предок, для которого текущий 
-узел находится в правом поддереве.
-*/
+
   node_pointer PrevNode() const noexcept {
     node_pointer prev = const_cast<node_pointer>(this);
     if (!prev->NextIsN_null(1)){

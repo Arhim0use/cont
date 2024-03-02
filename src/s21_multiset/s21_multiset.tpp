@@ -69,14 +69,6 @@ set<Key, Compare, Allocator>::insert(const Key &value){
   return {set::iterator (pair.first), !pair.second};
 }
 
-template <typename Key, class Compare, class Allocator> template<typename... Args>
-std::vector<std::pair<typename set<Key, Compare, Allocator>::iterator, bool>>
-set<Key, Compare, Allocator>::insert_many(Args&&... items){
-  std::vector<std::pair<iterator,bool>> vec;
-  (..., vec.push_back(this->insert(std::forward<Args>(items))));
-  return vec;
-}
-
 template <typename Key, class Compare, class Allocator>
 void set<Key, Compare, Allocator>::merge(set& other){ 
   if(this != &other){

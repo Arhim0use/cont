@@ -35,6 +35,9 @@ class stack {
 
   void push(const_reference data) noexcept { cont_.push_back(data); }
 
+  template<typename... Args>
+  void insert_many_front(Args&&... args){ (... , cont_.push_back(args)); }
+
   template <class... Args> // вызывает конструктор элемента и создает обьект внутри себя
   void emplace(Args&&... args){ 
     cont_.emplace_back(std::forward<Args>(args)...);
