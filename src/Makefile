@@ -1,76 +1,72 @@
 CC = g++
-CFLAGS = -Wall -Wextra -Werror -std=c++17 -pedantic 
+CFLAGS = -Wall -Wextra -Werror -std=c++17  
 LDFLAGS = -lgtest -pthread
 GCFLAGS = -fprofile-arcs -ftest-coverage
 VG_FLAGS =	--vgdb=no --leak-check=full --show-leak-kinds=all --track-origins=yes --verbose
-FS = -fsanitize=address -g
-CHECK =	$(shell pkg-config --cflags --libs check)
-
-SRC	= $(wildcard ./s21_*.h) 
-OBJ	= $(patsubst ./s21_%.h, ./s21_%.o, ${SRC})
 TEST = test
-LIB = s21_container.a
-FILE_TEST =	$(wildcard ./tests/s21_*.cc)
 
-all: clean test
 
-test:clean
-# $(CC) $(CFLAGS) $(LDFLAGS) --coverage ./tests/*.cc ./s21_matrix/*.cc -o $(TEST) $(GCFLAGS)
-# $(CC) $(CFLAGS) $(LDFLAGS) tests/s21_stack.cc s21_matrix/s21_matrix_oop.cc -o $(TEST) $(GCFLAGS)
-	$(CC) $(CFLAGS) $(LDFLAGS) tests/s21_set.cc -o $(TEST) $(GCFLAGS)
-	./$(TEST)
+.PHONY: test
 
-clean:
-	@rm -f  ./*.o ./*.a ./*.gcda ./*.gcno ./*.info ./*.out $(TEST)
-	@rm -rf coverage $(TEST).dSYM $(TEST)s.dSYM 
-	@rm -rf googletest
+all: clean gcov_report
+
+test: clean
+	@echo "+-------------------+"
+	@echo "|     UNIT_TEST     |"
+	@echo "+-------------------+"
+	@$(CC) $(CFLAGS)   ./../unit_test/*.cc ./../unit_test/matrix/*.cc -o $(TEST) $(LDFLAGS) $(GCFLAGS)
+	@./$(TEST)
+	@mv test ../build/
+
 
 gcov_report: test
+	@echo "+-------------------+"
+	@echo "|    GCOV_REPORT    |"
+	@echo "+-------------------+"
 	@lcov -t "containers_test" -o containers_test.info -c -d . --no-external --ignore-errors mismatch
-	genhtml -o report containers_test.info
-	open report/index.html
+	@genhtml -o report containers_test.info
+	@open report/index.html
+	@mkdir lcov_files
+	@mv *.gcda *.gcno *.info lcov_files
 
+clean:
+	@rm -rf report
+	@rm -rf lcov_files
+	@rm -f *.o *.a *.out
+	@rm -f ../build/test
+	@rm -f *.gcda *.gcno *.info
+	@rm -rf *.dSYM
+	@rm -f .DS_Store */.DS_Store
 
-# $(LIB):
-# 	@echo "+-------------------+"
-# 	@echo "|     MAKE_LIB      |"
-# 	@echo "+-------------------+"
-# 	@$(CC) $(CFLAGS) $(LDFLAGS) -c $(SRC)  
-# 	@ar -rcs $@ $(OBJ)
+style:
+	@echo "+-------------------+"
+	@echo "|       STYLE       |"
+	@echo "+-------------------+"
+	@clang-format -n -style=Google *.h  */*.h */*.tpp 
 
-# $(TEST): clean $(LIB)
-# 	@echo "+-------------------+"
-# 	@echo "|     UNIT_TEST     |"
-# 	@echo "+-------------------+"
-# 	@$(CC) $(CFLAGS) $(FILE_TEST) $(LIB) -o $@ $(LDFLAGS)
-# 	@./$(TEST)/$(TEST)
+docker_setup:
+	@echo "+-------------------+"
+	@echo "|    DOCKER_SETUP   |"
+	@echo "+-------------------+"
+	@rm -rf ~/Library/Containers/com.docker.docker
+	@mkdir -p ~/goinfre/Docker/Data
+	@ln -s ~/goinfre/Docker ~/Library/Containers/com.docker.docker
+	@open ~/../../Applications/Docker.app
 
-# gcov_report: $(TEST)
-# 	@echo "+-------------------+"
-# 	@echo "|    GCOV_REPORT    |"
-# 	@echo "+-------------------+"
-# 	@$(CC) --coverage $(GCFLAGS) $(CFLAGS) $(LDFLAGS) $(FILE_TEST) $(LIB) $(SRC) -o test 
-# 	@./$(TEST)
-# 	@rm -f *test.gcno *test.gcda 
-# 	@lcov -t lcov_branch_coverage=1 --ignore-errors  mismatch -t "tests" -o tests.info \
-# 				-c -d . --no-external 
-# 	@genhtml -o coverage tests.info 
-# 	@open coverage/index.html
+docker:
+	@echo "+-------------------+"
+	@echo "|    DOCKER_RUN     |"
+	@echo "+-------------------+"
+	@sh ../build/run.sh
 
-# valgrind_check: test
-# 	@CK_FORK=no valgrind  $(VG_FLAGS) ./$(TEST)
+valgrind: test
+	@echo "+-------------------+"
+	@echo "|   VALGRIND_LEAK   |"
+	@echo "+-------------------+"
+	@CK_FORK=no valgrind  $(VG_FLAGS) ./../build/$(TEST)
 
-# check:
-# 	@echo "+-------------------+"
-# 	@echo "|    STYLE_CHECK    |"
-# 	@echo "+-------------------+"
-# 	@clang-format -style=Google -n *.cc *.h
-# 	@clang-format -style=Google -n */*.cc 
-
-# clang:
-# 	clang-format -style=Google -i *.cc *.h
-# 	clang-format -style=Google -i */*.cc 
-# 	clang-format -style=Google -n *.cc *.h
-# 	clang-format -style=Google -n */*.cc
-
-rebuild: clean $(LIB)
+leaks: 
+	@echo "+-------------------+"
+	@echo "|     LEAKS_RUN     |"
+	@echo "+-------------------+"
+	@leaks -atExit -- ./../build/$(TEST)
